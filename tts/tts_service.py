@@ -16,7 +16,13 @@ class TTSService(Node):
 
         self.get_logger().info('Loading Coqui TTS model...')
         self.tts = TTS('tts_models/en/ljspeech/tacotron2-DDC')
-        self.sample_rate = self.tts.synthesizer.output_sample_rate
+        # output_sample_rate moved in newer Coqui TTS builds; fall back gracefully
+        syn = self.tts.synthesizer
+        self.sample_rate = (
+            getattr(syn, 'output_sample_rate', None)
+            or getattr(getattr(syn, 'tts_config', None), 'audio', {}).get('sample_rate', None)
+            or 22050
+        )
         self.get_logger().info(f'TTS ready. sample_rate={self.sample_rate}')
 
         self._speak_lock = threading.Lock()
