@@ -24,7 +24,7 @@ setup(
     zip_safe=True,
     maintainer='final-project',
     maintainer_email='karamahati@gmail.com',
-    description='Text-to-Speech service node for ROS 2',
+    description='Text-to-Speech subscriber node for ROS 2',
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
