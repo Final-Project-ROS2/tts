@@ -1,13 +1,8 @@
-import sys
 import os
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from TTS.api import TTS as CoquiTTS
-
-# Ensure Python can find your ROS 2 interfaces
-sys.path.append('/home/ppoohkt/ros2_ws/install/tts_interfaces/lib/python3.10/site-packages')
-sys.path.append('/home/ppoohkt/.local/lib/python3.10/site-packages')
 
 class TTSTopicNode(Node):
     def __init__(self):
