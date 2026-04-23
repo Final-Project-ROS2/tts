@@ -29,6 +29,7 @@ setup(
     entry_points={
         'console_scripts': [
             'tts_service = tts.tts_service:main',
+            'tts_node = tts.tts_node:main',
         ],
     },
 )
