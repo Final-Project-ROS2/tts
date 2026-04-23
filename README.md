@@ -62,7 +62,7 @@ Clone this repository into your ROS 2 workspace:
 
 ```bash
 cd ~/ros2_ws/src
-git clone <repo-url> tts
+git clone https://github.com/Final-Project-ROS2/tts.git
 ```
 
 Replace `<repo-url>` with the actual URL of this repository.
