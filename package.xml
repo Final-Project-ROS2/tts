@@ -3,7 +3,7 @@
 <package format="3">
   <name>tts</name>
   <version>0.0.0</version>
-  <description>Text-to-Speech subscriber node — subscribes to /tts and plays audio via Coqui TTS</description>
+  <description>Text-to-Speech nodes — tts_service (pyttsx3/espeak-ng) subscribes /tts; tts_node (Coqui TTS) subscribes /speech_text</description>
   <maintainer email="karamahati@gmail.com">final-project</maintainer>
   <license>Apache-2.0</license>
 

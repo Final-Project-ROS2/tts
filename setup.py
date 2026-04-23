@@ -19,6 +19,7 @@ setup(
     install_requires=[
         'setuptools',
         'pyttsx3',
+        'coqui-tts',
     ],
     zip_safe=True,
     maintainer='final-project',
