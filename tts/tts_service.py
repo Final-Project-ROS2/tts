@@ -5,7 +5,7 @@ import threading
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 
 import pyttsx3
 
@@ -17,6 +17,11 @@ class TTSService(Node):
         self._speech_queue = queue.Queue()
         self._engine = None
         self._engine_ready = threading.Event()
+
+        # /tts_busy  — True while speaking, False when idle
+        # /tts_done  — True on success, False on error (once per utterance)
+        self._busy_pub = self.create_publisher(Bool, '/tts_busy', 10)
+        self._done_pub = self.create_publisher(Bool, '/tts_done', 10)
 
         self.subscription = self.create_subscription(
             String,
@@ -62,14 +67,26 @@ class TTSService(Node):
                 text = self._speech_queue.get(timeout=1.0)
             except queue.Empty:
                 continue
+            success = False
             try:
                 self.get_logger().info(f'Speaking: "{text}"')
+                self._publish_busy(True)
                 self._engine.say(text)
                 self._engine.runAndWait()
+                success = True
             except Exception as e:
                 self.get_logger().error(f'TTS playback failed: {e}')
             finally:
+                self._publish_busy(False)
+                done_msg = Bool()
+                done_msg.data = success
+                self._done_pub.publish(done_msg)
                 self._speech_queue.task_done()
+
+    def _publish_busy(self, state: bool):
+        msg = Bool()
+        msg.data = state
+        self._busy_pub.publish(msg)
 
 
 def main(args=None):
