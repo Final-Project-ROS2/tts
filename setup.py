@@ -18,8 +18,7 @@ setup(
     ],
     install_requires=[
         'setuptools',
-        'coqui-tts[codec]',
-        'sounddevice',
+        'pyttsx3',
     ],
     zip_safe=True,
     maintainer='final-project',
