@@ -5,33 +5,21 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from TTS.api import TTS as CoquiTTS
 
-# --- PORTABLE PATH LOGIC ---
-# This finds the home directory of whoever is running the code
-home_dir = os.path.expanduser('~')
-
-# Instead of hardcoding "/home/ppoohkt", we build the path dynamically
-install_path = os.path.join(home_dir, 'ros2_ws/install/tts_interfaces/lib/python3.10/site-packages')
-local_path = os.path.join(home_dir, '.local/lib/python3.10/site-packages')
-
-sys.path.append(install_path)
-sys.path.append(local_path)
-
-
 class TTSTopicNode(Node):
     def __init__(self):
         super().__init__('tts_topic_node')
 
-        # Subscribe to 'speech_text' topic
+        # Subscribe to '/tts' topic
         self.subscription = self.create_subscription(
             String,
-            'speech_text',
+            '/tts',
             self.listener_callback,
             10)
 
         self.get_logger().info('Loading Coqui TTS model...')
         # Initializing the model
         self.tts = CoquiTTS(model_name="tts_models/en/ljspeech/vits", progress_bar=False)
-        self.get_logger().info('TTS Topic Node Ready. Listening on /speech_text')
+        self.get_logger().info('TTS Topic Node Ready. Listening on /tts')
 
     def listener_callback(self, msg):
         self.get_logger().info(f'Processing speech for: "{msg.data}"')

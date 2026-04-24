@@ -1,58 +1,54 @@
 # TTS (Text-to-Speech) ROS 2 Node
 
-This package lets your robot **speak text out loud**. You send it a text message over ROS 2, and it reads it aloud through your speakers.
+This package lets your robot **speak text out loud**. Publish a string to the `/tts` ROS 2 topic and the node synthesizes speech and plays it through your speakers.
 
-It uses `espeak-ng` — a free, lightweight speech engine that runs completely **offline** on your computer. No internet, no API key, no account needed.
+It uses **Coqui TTS** (`tts_models/en/ljspeech/vits`) — a high-quality neural TTS engine that runs completely **offline**. No internet, no API key, no account needed.
 
-> This guide assumes you are running **Ubuntu 22.04** inside **VMware** on a Mac, with **ROS 2 Humble** already installed.
+> This guide assumes you are running **Ubuntu 22.04** with **ROS 2 Humble** already installed.
 
 ---
 
-## How It Works (Simple Version)
+## How It Works
 
 ```
-You publish a message  →  /tts topic  →  tts_service node  →  speaks out loud
+ros2 topic pub /tts  →  tts_topic_node  →  Coqui TTS  →  aplay  →  speakers
 ```
 
-For example, you publish `"Hello world"` to the `/tts` topic, and your VM's speakers say it.
+Publish `"Hello world"` to `/tts` and your speakers say it.
 
 ---
 
 ## Step 1 — Prerequisites
 
-Before starting, make sure you have these ready.
-
 **Check ROS 2 is installed:**
 ```bash
 ros2 --version
 ```
-You should see something like `ros2 cli version: 0.18.x`. If you get `command not found`, install ROS 2 Humble first.
 
 **Check your ROS 2 workspace exists:**
 ```bash
-ls ~/ros2_ws/src
+ls ~/final_project_ws/src
 ```
-If the folder does not exist, create it:
+If it does not exist:
 ```bash
-mkdir -p ~/ros2_ws/src
+mkdir -p ~/final_project_ws/src
 ```
 
 ---
 
 ## Step 2 — Install System Dependencies
 
-Install `espeak-ng` (the speech engine) from Ubuntu's package manager:
+Install `aplay` (ALSA audio player) used to play the synthesized WAV file:
 
 ```bash
 sudo apt update
-sudo apt install espeak-ng
+sudo apt install alsa-utils
 ```
 
 **Test it works:**
 ```bash
-espeak-ng "hello"
+aplay --version
 ```
-You should hear your VM say "hello" through your speakers. If you hear nothing, see the [Troubleshooting](#troubleshooting) section below.
 
 ---
 
@@ -61,62 +57,70 @@ You should hear your VM say "hello" through your speakers. If you hear nothing, 
 Clone this repository into your ROS 2 workspace:
 
 ```bash
-cd ~/ros2_ws/src
+cd ~/final_project_ws/src
 git clone https://github.com/Final-Project-ROS2/tts.git
 ```
-
-Replace `<repo-url>` with the actual URL of this repository.
 
 ---
 
 ## Step 4 — Install Python Dependencies
 
+Install Coqui TTS. On Ubuntu 22.04+ with a managed Python environment, use:
+
 ```bash
-pip install -r ~/ros2_ws/src/tts/requirements.txt
+pip install coqui-tts --break-system-packages
 ```
 
-This installs `pyttsx3`, the Python library that talks to `espeak-ng`.
+If you are inside an active virtual environment (`tts_venv` or similar), use the venv's pip directly to avoid the system restriction:
+
+```bash
+~/tts_venv/bin/pip install coqui-tts
+```
+
+> The first time the node starts, Coqui TTS will automatically download the `tts_models/en/ljspeech/vits` model (~100 MB). This only happens once; subsequent runs load from cache.
 
 ---
 
 ## Step 5 — Build the Package
 
+**Important:** Run `colcon build` from the **workspace root** (`~/final_project_ws`), not from inside the package directory.
+
 ```bash
-cd ~/ros2_ws
+cd ~/final_project_ws
 colcon build --packages-select tts
 ```
 
-Wait for it to finish. You should see:
+You should see:
 
 ```
 Starting >>> tts
 Finished <<< tts
 ```
 
-Then load the package into your terminal session:
+Load the package into your terminal session:
 
 ```bash
-source ~/ros2_ws/install/setup.bash
+source ~/final_project_ws/install/setup.bash
 ```
 
-> You need to run `source ~/ros2_ws/install/setup.bash` every time you open a new terminal. To avoid this, add it to your `.bashrc`:
+> Add this line to `~/.bashrc` to avoid running it every time:
 > ```bash
-> echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc
+> echo "source ~/final_project_ws/install/setup.bash" >> ~/.bashrc
 > ```
 
 ---
 
 ## Step 6 — Run the Node
 
-Open a terminal and start the TTS node:
-
 ```bash
-ros2 launch tts tts.launch.py
+ros2 run tts tts_node
 ```
 
-You should see output like:
+You should see:
+
 ```
-[tts_service]: TTS ready (espeak-ng). Voice: ...
+[tts_topic_node]: Loading Coqui TTS model...
+[tts_topic_node]: TTS Topic Node Ready. Listening on /tts
 ```
 
 The node is now running and waiting for text to speak.
@@ -131,71 +135,53 @@ Open a **second terminal** and publish a message:
 ros2 topic pub --once /tts std_msgs/msg/String "data: 'Hello from ROS 2'"
 ```
 
-Your VM should speak the words out loud. You can change the text inside the single quotes to anything you want.
+Your speakers should say the words out loud. Change the text inside the single quotes to anything you want.
 
 ---
 
-## Running Without the Launch File (Alternative)
+## Topic Reference
 
-If you prefer, you can run the node directly instead of using the launch file:
-
-```bash
-ros2 run tts tts_service
-```
-
-Both methods do the same thing. The launch file is the recommended way.
+| Topic | Type | Direction | Description |
+|---|---|---|---|
+| `/tts` | `std_msgs/msg/String` | Subscribe | Text to be spoken aloud |
 
 ---
 
 ## Troubleshooting
 
-### I hear nothing when I run `espeak-ng "hello"`
+### No audio output
 
-VMware needs audio output enabled. Check these steps:
-
-1. **In VMware settings** — go to your VM settings and make sure "Sound Card" is added and enabled.
-
-2. **Check PulseAudio is running inside Ubuntu:**
-   ```bash
-   pulseaudio --check -v
-   ```
-   If it is not running, start it:
-   ```bash
-   pulseaudio --start
-   ```
-
-3. **Test audio with a simple tone:**
-   ```bash
-   speaker-test -t sine -f 440 -l 1
-   ```
+Check that `aplay` can play audio:
+```bash
+aplay /usr/share/sounds/alsa/Front_Left.wav
+```
+If you hear nothing, check your system's audio output device.
 
 ---
 
-### `espeak-ng: command not found`
+### `aplay: command not found`
 
-Run the install again:
 ```bash
-sudo apt install espeak-ng libespeak-ng-dev
+sudo apt install alsa-utils
 ```
 
 ---
 
-### `ModuleNotFoundError: No module named 'pyttsx3'`
+### `ModuleNotFoundError: No module named 'TTS'`
 
-Run:
 ```bash
-pip install pyttsx3
+pip install coqui-tts
 ```
 
 ---
 
 ### The node starts but nothing is spoken
 
-Check the node is actually receiving your message. In a second terminal:
+Check the node is receiving messages. In a second terminal:
 ```bash
 ros2 topic echo /tts
 ```
-Then publish your message in a third terminal. You should see the message appear in the `echo` terminal. If you do not, the topic name may be wrong.
+Then publish in a third terminal. You should see the message appear. If not, the topic name may be wrong.
 
 ---
 
@@ -203,7 +189,7 @@ Then publish your message in a third terminal. You should see the message appear
 
 Make sure you are in the right folder:
 ```bash
-cd ~/ros2_ws
+cd ~/final_project_ws
 source install/setup.bash
 ```
 
@@ -213,12 +199,12 @@ source install/setup.bash
 
 | Task | Command |
 |---|---|
-| Install dependencies | `sudo apt install espeak-ng && pip install pyttsx3` |
-| Build | `cd ~/ros2_ws && colcon build --packages-select tts` |
-| Load into terminal | `source ~/ros2_ws/install/setup.bash` |
-| Start the node | `ros2 launch tts tts.launch.py` |
+| Install audio player | `sudo apt install alsa-utils` |
+| Install Coqui TTS | `pip install coqui-tts --break-system-packages` |
+| Build | `cd ~/final_project_ws && colcon build --packages-select tts` |
+| Load into terminal | `source ~/final_project_ws/install/setup.bash` |
+| Start the node | `ros2 run tts tts_node` |
 | Send text to speak | `ros2 topic pub --once /tts std_msgs/msg/String "data: 'your text here'"` |
-| Test espeak directly | `espeak-ng "hello"` |
 
 ---
 
