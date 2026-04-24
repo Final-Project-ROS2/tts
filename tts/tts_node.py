@@ -1,9 +1,16 @@
 import sys
 import os
+import time
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from TTS.api import TTS as CoquiTTS
+
+try:
+    import simpleaudio as sa
+    SIMPLEAUDIO_AVAILABLE = True
+except ImportError:
+    SIMPLEAUDIO_AVAILABLE = False
 
 class TTSTopicNode(Node):
     def __init__(self):
@@ -26,8 +33,18 @@ class TTSTopicNode(Node):
         try:
             output_path = "/tmp/output.wav"
             self.tts.tts_to_file(text=msg.data, file_path=output_path)
-            # aplay is standard on most Ubuntu systems
-            os.system(f"aplay {output_path}")
+            # give the system a brief moment before playback to avoid missing the first word
+            time.sleep(1.0)
+            if SIMPLEAUDIO_AVAILABLE:
+                try:
+                    wave_obj = sa.WaveObject.from_wave_file(output_path)
+                    play_obj = wave_obj.play()
+                    play_obj.wait_done()
+                except Exception as inner_exc:
+                    self.get_logger().warn(f'simpleaudio playback failed: {inner_exc} — falling back to aplay')
+                    os.system(f"aplay {output_path}")
+            else:
+                os.system(f"aplay {output_path}")
         except Exception as e:
             self.get_logger().error(f"TTS Error: {e}")
 

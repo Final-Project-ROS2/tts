@@ -20,6 +20,7 @@ setup(
         'setuptools',
         'pyttsx3',
         'coqui-tts',
+        'simpleaudio',
     ],
     zip_safe=True,
     maintainer='final-project',
